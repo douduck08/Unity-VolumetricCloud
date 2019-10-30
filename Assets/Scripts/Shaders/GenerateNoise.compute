@@ -1,0 +1,20 @@
+﻿#pragma kernel CSMain
+
+#define THREAD_GROUP_SIZE_X 4
+#define THREAD_GROUP_SIZE_Y 4
+#define THREAD_GROUP_SIZE_Z 4
+
+// Buffers
+
+// Functions
+
+// Kernels
+[numthreads(THREAD_GROUP_SIZE_X, THREAD_GROUP_SIZE_Y, THREAD_GROUP_SIZE_Z)]
+void CSMain (
+in uint3 dispatchThreadID : SV_DispatchThreadID, // DispatchThreadID  = dot(GroupID, numthreads) + GroupThreadId;
+in uint  groupIndex       : SV_GroupIndex, // uint GroupIndex = unique index of a thread inside a group
+in uint3 groupID          : SV_GroupID, // GroupID = index for each dimension inside a ThreadGroupCount
+in uint3 groupThreadID    : SV_GroupThreadID // uint3 GroupThreadId = indices for each dimension inside a group of the current thread
+) {
+
+}

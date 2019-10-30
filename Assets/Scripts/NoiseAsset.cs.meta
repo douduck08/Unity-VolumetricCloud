@@ -1,0 +1,13 @@
+fileFormatVersion: 2
+guid: a7f27889a605d9242a0adf29fa96cd39
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - noiseTexture: {instanceID: 0}
+  - generateNoiseCS: {fileID: 7200000, guid: eb52b471b1af559409d21d6e8c2d9307, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
