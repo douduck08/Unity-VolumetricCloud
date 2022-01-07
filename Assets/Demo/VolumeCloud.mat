@@ -24,11 +24,14 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _NoiseTex:
-        m_Texture: {fileID: 5952925240560408855, guid: 2ae15ca6453b10242b5f4b41d6167a0f,
+        m_Texture: {fileID: -5622176362519907165, guid: 2ae15ca6453b10242b5f4b41d6167a0f,
           type: 2}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
-    - _NoiseScale: 1
+    - _CloudIntensity: 1
+    - _DensityMultiplier: 1
+    - _DensityOffset: 0
+    - _NoiseScale: 5
     - _Scale: 0.1
     m_Colors: []
