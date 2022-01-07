@@ -5,8 +5,24 @@
 #define THREAD_GROUP_SIZE_Z 4
 
 // Buffers
+StructuredBuffer<float3> _Points;
+RWStructuredBuffer<float> _Distances;
+
+uint _CellNumber;
+uint _Resolution;
 
 // Functions
+uint GetPixelIndex (uint3 id) {
+    return id.x + _Resolution * (id.y + _Resolution * id.z);
+}
+
+float3 GetTexcoord (uint3 id) {
+    return float3(id.x, id.y, id.z) * (1.0f / _Resolution) + (0.5f / _Resolution);
+}
+
+int GetCellIndex (int3 id) {
+    return id.x + _CellNumber * (id.y + _CellNumber * id.z);
+}
 
 // Kernels
 [numthreads(THREAD_GROUP_SIZE_X, THREAD_GROUP_SIZE_Y, THREAD_GROUP_SIZE_Z)]
@@ -16,5 +32,25 @@ in uint  groupIndex       : SV_GroupIndex, // uint GroupIndex = unique index of 
 in uint3 groupID          : SV_GroupID, // GroupID = index for each dimension inside a ThreadGroupCount
 in uint3 groupThreadID    : SV_GroupThreadID // uint3 GroupThreadId = indices for each dimension inside a group of the current thread
 ) {
+    uint cellCount = _CellNumber * _CellNumber * _CellNumber;
 
+    float3 samplePoint = GetTexcoord(dispatchThreadID);
+    int3 sampleCellId = floor(samplePoint * _CellNumber);
+    float minSqrDst = 1.0;
+    for (int offset_z = -2; offset_z <= 2; ++offset_z) {
+        for (int offset_y = -2; offset_y <= 2; ++offset_y) {
+            for (int offset_x = -2; offset_x <= 2; ++offset_x) {
+                int3 pointCellId = sampleCellId + int3(offset_x, offset_y, offset_z);
+                int3 warp = floor((float3)pointCellId / _CellNumber);
+                pointCellId -= warp * _CellNumber;
+
+                int pointIndex = GetCellIndex(pointCellId);
+                float3 diff = samplePoint - (_Points[pointIndex] + warp);
+                minSqrDst = min(minSqrDst, dot(diff, diff));
+            }
+        }
+    }
+
+    uint index = GetPixelIndex(dispatchThreadID);
+    _Distances[index] = sqrt(minSqrDst);
 }

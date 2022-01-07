@@ -1,6 +1,6 @@
 ﻿Shader "Volumetric Rendering/Volumetric Cloud" {
     Properties {
-        _NoiseTex ("Texture", 3D) = "white" {}
+        _NoiseTex ("Noise Texture", 3D) = "white" {}
     }
     SubShader {
         Pass {

@@ -9,8 +9,14 @@ public class NoiseAssetEditor : Editor {
         base.OnInspectorGUI ();
 
         var noiseAsset = target as NoiseAsset;
+        GUI.enabled = noiseAsset.NeedUpdate ();
         if (GUILayout.Button ("Apply")) {
-            var texture = noiseAsset.GetNoiseTexture ();
+            var texture = noiseAsset.ApplyNoiseSettings ();
+            UpdateAsset (noiseAsset, texture);
+        }
+        GUI.enabled = true;
+        if (GUILayout.Button ("Force Update")) {
+            var texture = noiseAsset.ApplyNoiseSettings (true);
             UpdateAsset (noiseAsset, texture);
         }
     }
