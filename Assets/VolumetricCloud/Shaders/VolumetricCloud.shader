@@ -1,8 +1,5 @@
-﻿Shader "Volumetric Rendering/Volumetric Cloud" {
+﻿Shader "Hidden/Volumetric Cloud" {
     Properties {
-        _NoiseTex ("Noise Texture", 3D) = "white" {}
-        _NoiseScale ("Noise Scale", float) = 1.0
-        _DensityOffset ("Density Offset", Range(0.0, 1.0)) = 0.0
     }
     SubShader {
         Tags { "Queue"="Transparent" "RenderType"="Transparent" "IgnoreProjector"="True" }
