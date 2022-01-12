@@ -14,6 +14,9 @@ struct v2f {
 sampler2D _CameraDepthTexture;
 float4 _CameraDepthTexture_TexelSize;
 
+sampler2D _BlueNoise;
+float4 _BlueNoise_TexelSize;
+
 sampler3D _NoiseTex;
 float4 _NoiseScale1;
 float4 _NoiseScale2;
@@ -30,11 +33,19 @@ float _DensityMultiplier;
 
 float4 _Light;
 float4 _LightColor;
-float _LightAbsorption;
+float4 _LightParams1;
+float4 _LightParams2;
 
 uint _CloudStepNumber;
 uint _LightStepNumber;
 float _MaxDistance;
+float _RandomStrength;
+
+#define _LightAbsorption _LightParams1.x
+#define _BaseAttenuation _LightParams1.y
+#define _InScatter _LightParams2.x
+#define _OutScatter _LightParams2.y
+#define _BlendScatter _LightParams2.z
 
 // ******** //
 //  vertex  //
@@ -66,9 +77,9 @@ float2 BoxIntersection(float3 rayOrigin, float3 rayDir) {
 float SampleDensity(float3 worldPos) {
     float density = 0;
     float t = _Time.x;
-    density += tex3D(_NoiseTex, (worldPos + _NoiseScolling1.xyz * t) / _NoiseScale1.xyz).r * _NoiseScale1.w;
-    density += tex3D(_NoiseTex, (worldPos + _NoiseScolling2.xyz * t) / _NoiseScale2.xyz).r * _NoiseScale2.w;
-    density += tex3D(_NoiseTex, (worldPos + _NoiseScolling3.xyz * t) / _NoiseScale3.xyz).r * _NoiseScale3.w;
+    density += tex3Dlod(_NoiseTex, float4((worldPos + _NoiseScolling1.xyz * t) / _NoiseScale1.xyz, 0)).r * _NoiseScale1.w;
+    density += tex3Dlod(_NoiseTex, float4((worldPos + _NoiseScolling2.xyz * t) / _NoiseScale2.xyz, 0)).r * _NoiseScale2.w;
+    density += tex3Dlod(_NoiseTex, float4((worldPos + _NoiseScolling3.xyz * t) / _NoiseScale3.xyz, 0)).r * _NoiseScale3.w;
     return max(0, density - _DensityOffset) * _DensityMultiplier;
 }
 
@@ -88,13 +99,24 @@ float GetLightTransmittance(float3 rayOrigin, float3 rayDir) {
         float3 samplePos = rayOrigin + rayDir * (nearDist + stepSize * i);
         totalDensity += SampleDensity(samplePos) * stepSize;
     }
-    return exp(-totalDensity * _LightAbsorption);
+    float transmittance = exp(-totalDensity * _LightAbsorption);
+    return max(_BaseAttenuation, transmittance);
+}
+
+float HG(float vdotl, float g) {
+    float g2 = g*g;
+    return (1 - g2) / (4 * 3.1415926 * pow(1 + g2 - 2 * g * vdotl, 1.5));
+}
+
+float Scatter(float vdotl) {
+    return lerp(HG(vdotl, _InScatter), HG(vdotl, -_OutScatter), _BlendScatter);
 }
 
 float4 frag (v2f i) : SV_Target {
     // calculate distance (not depth) to scene object
     float3 posVS = i.posVS.xyz / i.posVS.w;
-    float depth = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.posProj.xy / i.posProj.w));
+    float2 screenUv = i.posProj.xy / i.posProj.w;
+    float depth = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, screenUv));
     float sceneDst = depth * length(posVS) / (-posVS.z);
     
     // calculate distance to volume box
@@ -104,9 +126,15 @@ float4 frag (v2f i) : SV_Target {
     float farDist = min(min(sceneDst, boxHits.y), _MaxDistance);
     clip(farDist - nearDist);
 
+    // blue noise
+    float2 noiseUv = screenUv * _CameraDepthTexture_TexelSize.zw * _BlueNoise_TexelSize.xy;
+    float blueNoise = tex2Dlod(_BlueNoise, float4(noiseUv, 0, 0)).r * _RandomStrength;
+
     // marching in volume
     rayDir = normalize(rayDir);
     float stepSize = (farDist - nearDist) / (_CloudStepNumber - 1);
+    nearDist += (blueNoise - 0.5) * 2.0 * stepSize;
+    float scatter = Scatter(dot(rayDir, _Light.xyz));
     float transmittance = 1;
     float lightEnergy = 0;
     [loop]
@@ -116,10 +144,10 @@ float4 frag (v2f i) : SV_Target {
         float lightTransmittance = GetLightTransmittance(samplePos, _Light);
 
         density *= stepSize;
-        lightEnergy += density * transmittance * lightTransmittance;
-        transmittance *= exp(-density);
+        lightEnergy += density * transmittance * lightTransmittance * scatter;
+        transmittance *= exp(-density * _LightAbsorption);
 
-        if (transmittance < 0.01) {
+        if (transmittance < 0.001) {
             break;
         }
     }

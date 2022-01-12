@@ -5,6 +5,7 @@ MonoImporter:
   serializedVersion: 2
   defaultReferences:
   - shader: {fileID: 4800000, guid: afe2f37570cbe5b479404b52f45c238c, type: 3}
+  - blueNoise: {fileID: 2800000, guid: 2754655e34397cd4eb85be4536867b7a, type: 3}
   - noiseAsset: {instanceID: 0}
   - sun: {instanceID: 0}
   executionOrder: 0

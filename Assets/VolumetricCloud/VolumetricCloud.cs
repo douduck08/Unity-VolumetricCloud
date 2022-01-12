@@ -7,6 +7,7 @@ public class VolumetricCloud : MonoBehaviour {
 
     [Header ("Resources")]
     public Shader shader;
+    public Texture2D blueNoise;
     Material material;
     static Mesh cubeMesh;
 
@@ -26,21 +27,32 @@ public class VolumetricCloud : MonoBehaviour {
 
     [Header ("Cloud Settings")]
     public Vector3 volumeSize = Vector3.one;
-    [Range (0f, 1f)]
     public float densityOffset = 0f;
     public float densityMultiplier = 1f;
     public float speedMultiplier = 1f;
     [ColorUsage (false)]
     public Color cloudColor = Color.white;
 
-    [Header ("Light Settings")]
+    [Header ("Lighting")]
     public Light sun;
     public float lightAbsorption = 1f;
+    [Range (0f, 1f)]
+    public float baseAttenuation = 0f;
+    [Range (0f, 1f)]
+    public float inScatter = 0f;
+    [Range (0f, 1f)]
+    public float outScatter = 0f;
+    [Range (0f, 1f)]
+    public float blendScatter = 0.5f;
 
     [Header ("Rendering Settings")]
+    [Range (4, 64)]
     public int cloudStepNumber = 4;
+    [Range (4, 16)]
     public int lightStepNumber = 4;
     public float maxDistance = 100;
+    [Range (0f, 1f)]
+    public float randomStrength = 0f;
     [SerializeField] bool renderInEditMode = false;
     [SerializeField] bool drawGizmos = false;
 
@@ -68,9 +80,8 @@ public class VolumetricCloud : MonoBehaviour {
         volumeSize.x = Mathf.Max (0.01f, volumeSize.x);
         volumeSize.y = Mathf.Max (0.01f, volumeSize.y);
         volumeSize.z = Mathf.Max (0.01f, volumeSize.z);
-        densityOffset = Mathf.Clamp01 (densityOffset);
         lightAbsorption = Mathf.Max (0, lightAbsorption);
-        cloudStepNumber = Mathf.Clamp (cloudStepNumber, 4, 128);
+        cloudStepNumber = Mathf.Clamp (cloudStepNumber, 4, 64);
         lightStepNumber = Mathf.Clamp (lightStepNumber, 4, 16);
         return true;
     }
@@ -81,7 +92,6 @@ public class VolumetricCloud : MonoBehaviour {
         }
 
         var noiseTexture = noiseAsset.texture;
-        var totalWeight = noiseLayer1.weight + noiseLayer2.weight + noiseLayer3.weight;
         var light = new Vector4 (0, 1, 0, 0);
         var lightColor = Vector4.one;
         if (sun != null) {
@@ -90,10 +100,11 @@ public class VolumetricCloud : MonoBehaviour {
             lightColor *= sun.intensity;
         }
 
+        material.SetTexture ("_BlueNoise", blueNoise);
         material.SetTexture ("_NoiseTex", noiseTexture);
-        material.SetVector ("_NoiseScale1", new Vector4 (noiseLayer1.scale.x, noiseLayer1.scale.y, noiseLayer1.scale.z, noiseLayer1.weight / totalWeight));
-        material.SetVector ("_NoiseScale2", new Vector4 (noiseLayer2.scale.x, noiseLayer2.scale.y, noiseLayer2.scale.z, noiseLayer2.weight / totalWeight));
-        material.SetVector ("_NoiseScale3", new Vector4 (noiseLayer3.scale.x, noiseLayer3.scale.y, noiseLayer3.scale.z, noiseLayer3.weight / totalWeight));
+        material.SetVector ("_NoiseScale1", new Vector4 (noiseLayer1.scale.x, noiseLayer1.scale.y, noiseLayer1.scale.z, noiseLayer1.weight));
+        material.SetVector ("_NoiseScale2", new Vector4 (noiseLayer2.scale.x, noiseLayer2.scale.y, noiseLayer2.scale.z, noiseLayer2.weight));
+        material.SetVector ("_NoiseScale3", new Vector4 (noiseLayer3.scale.x, noiseLayer3.scale.y, noiseLayer3.scale.z, noiseLayer3.weight));
         material.SetVector ("_NoiseScolling1", noiseLayer1.scrolling * noiseLayer1.scrollingSpeed * speedMultiplier);
         material.SetVector ("_NoiseScolling2", noiseLayer2.scrolling * noiseLayer2.scrollingSpeed * speedMultiplier);
         material.SetVector ("_NoiseScolling3", noiseLayer3.scrolling * noiseLayer3.scrollingSpeed * speedMultiplier);
@@ -106,11 +117,13 @@ public class VolumetricCloud : MonoBehaviour {
 
         material.SetVector ("_Light", light);
         material.SetVector ("_LightColor", lightColor);
-        material.SetFloat ("_LightAbsorption", lightAbsorption);
+        material.SetVector ("_LightParams1", new Vector4 (lightAbsorption, baseAttenuation, 0, 0));
+        material.SetVector ("_LightParams2", new Vector4 (inScatter, outScatter, blendScatter, 0));
 
         material.SetInt ("_CloudStepNumber", cloudStepNumber);
         material.SetInt ("_LightStepNumber", lightStepNumber);
         material.SetFloat ("_MaxDistance", maxDistance);
+        material.SetFloat ("_RandomStrength", randomStrength);
     }
 
     void OnDrawGizmos () {
