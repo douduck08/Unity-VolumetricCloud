@@ -157,34 +157,37 @@ MonoBehaviour:
     scale: {x: 100, y: 50, z: 100}
     scrolling: {x: 1, y: 0, z: 0}
     scrollingSpeed: 13
-    weight: 1
+    weight: 0.625
   noiseLayer2:
     scale: {x: 50, y: 20, z: 50}
     scrolling: {x: 1, y: 0, z: 0}
     scrollingSpeed: 11
-    weight: 0.625
+    weight: 0.25
   noiseLayer3:
-    scale: {x: 5, y: 2, z: 5}
+    scale: {x: 25, y: 10, z: 25}
     scrolling: {x: 1, y: 0, z: 0}
     scrollingSpeed: 9
     weight: 0.125
   volumeSize: {x: 200, y: 20, z: 200}
-  densityOffset: 1.05
-  densityMultiplier: 15
-  speedMultiplier: -3
+  densityOffset: 0.6
+  densityMultiplier: 2
+  speedMultiplier: 3
   cloudColor: {r: 1, g: 1, b: 1, a: 1}
   sun: {fileID: 705507994}
-  lightAbsorption: 0.05
-  baseAttenuation: 0.2
-  inScatter: 0.4
+  lightAbsorption: 0.25
+  attenuationClamp: 0.2
+  minimumAttenuation: 0.2
+  extraBrightIntensity: 1
+  extraBrightExponent: 3
+  inScatter: 0.2
   outScatter: 0.1
   blendScatter: 0.5
   cloudStepNumber: 32
-  lightStepNumber: 8
+  lightStepNumber: 4
   maxDistance: 200
   randomStrength: 0.5
   renderInEditMode: 1
-  drawGizmos: 1
+  drawGizmos: 0
 --- !u!4 &307301138
 Transform:
   m_ObjectHideFlags: 0

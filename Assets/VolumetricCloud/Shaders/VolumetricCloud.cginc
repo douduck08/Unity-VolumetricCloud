@@ -42,7 +42,10 @@ float _MaxDistance;
 float _RandomStrength;
 
 #define _LightAbsorption _LightParams1.x
-#define _BaseAttenuation _LightParams1.y
+#define _AttenuationClamp _LightParams1.y
+#define _ExtraBrightIntensity _LightParams1.z
+#define _ExtraBrightExponent _LightParams1.w
+#define _MinimumAttenuation _LightParams2.w
 #define _InScatter _LightParams2.x
 #define _OutScatter _LightParams2.y
 #define _BlendScatter _LightParams2.z
@@ -80,7 +83,7 @@ float SampleDensity(float3 worldPos) {
     density += tex3Dlod(_NoiseTex, float4((worldPos + _NoiseScolling1.xyz * t) / _NoiseScale1.xyz, 0)).r * _NoiseScale1.w;
     density += tex3Dlod(_NoiseTex, float4((worldPos + _NoiseScolling2.xyz * t) / _NoiseScale2.xyz, 0)).r * _NoiseScale2.w;
     density += tex3Dlod(_NoiseTex, float4((worldPos + _NoiseScolling3.xyz * t) / _NoiseScale3.xyz, 0)).r * _NoiseScale3.w;
-    return max(0, density - _DensityOffset) * _DensityMultiplier;
+    return saturate((density - _DensityOffset) * _DensityMultiplier);
 }
 
 float GetLightTransmittance(float3 rayOrigin, float3 rayDir) {
@@ -100,7 +103,8 @@ float GetLightTransmittance(float3 rayOrigin, float3 rayDir) {
         totalDensity += SampleDensity(samplePos) * stepSize;
     }
     float transmittance = exp(-totalDensity * _LightAbsorption);
-    return max(_BaseAttenuation, transmittance);
+    float transmittanceClamp = exp(-_AttenuationClamp * _LightAbsorption);
+    return max(max(transmittance, transmittanceClamp), totalDensity * _MinimumAttenuation);
 }
 
 float HG(float vdotl, float g) {
@@ -109,7 +113,9 @@ float HG(float vdotl, float g) {
 }
 
 float Scatter(float vdotl) {
-    return lerp(HG(vdotl, _InScatter), HG(vdotl, -_OutScatter), _BlendScatter);
+    float inScatter = max(HG(vdotl, _InScatter), _ExtraBrightIntensity * pow(vdotl, _ExtraBrightExponent));
+    float outScatter = HG(vdotl, -_OutScatter);
+    return lerp(inScatter, outScatter, _BlendScatter);
 }
 
 float4 frag (v2f i) : SV_Target {
@@ -131,25 +137,27 @@ float4 frag (v2f i) : SV_Target {
     float blueNoise = tex2Dlod(_BlueNoise, float4(noiseUv, 0, 0)).r * _RandomStrength;
 
     // marching in volume
-    rayDir = normalize(rayDir);
     float stepSize = (farDist - nearDist) / (_CloudStepNumber - 1);
     nearDist += (blueNoise - 0.5) * 2.0 * stepSize;
-    float scatter = Scatter(dot(rayDir, _Light.xyz));
+    rayDir = normalize(rayDir);
+
+    float3 samplePos = _WorldSpaceCameraPos + rayDir * nearDist;
+    float lightScatter = Scatter(dot(rayDir, _Light.xyz));
+
     float transmittance = 1;
     float lightEnergy = 0;
     [loop]
     for (uint i = 0; i < _CloudStepNumber; ++i) {
-        float3 samplePos = _WorldSpaceCameraPos + rayDir * (nearDist + stepSize * i);
-        float density = SampleDensity(samplePos);
+        float density = SampleDensity(samplePos) * stepSize;
         float lightTransmittance = GetLightTransmittance(samplePos, _Light);
 
-        density *= stepSize;
-        lightEnergy += density * transmittance * lightTransmittance * scatter;
+        lightEnergy += density * transmittance * lightTransmittance * lightScatter;
         transmittance *= exp(-density * _LightAbsorption);
 
         if (transmittance < 0.001) {
             break;
         }
+        samplePos += rayDir * stepSize;
     }
 
     float alpha = 1 - transmittance;

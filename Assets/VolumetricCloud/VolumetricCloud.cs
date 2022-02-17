@@ -37,7 +37,12 @@ public class VolumetricCloud : MonoBehaviour {
     public Light sun;
     public float lightAbsorption = 1f;
     [Range (0f, 1f)]
-    public float baseAttenuation = 0f;
+    public float attenuationClamp = 0f;
+    [Range (0f, 1f)]
+    public float minimumAttenuation = 0f;
+    public float extraBrightIntensity = 0f;
+    public float extraBrightExponent = 0f;
+
     [Range (0f, 1f)]
     public float inScatter = 0f;
     [Range (0f, 1f)]
@@ -117,8 +122,8 @@ public class VolumetricCloud : MonoBehaviour {
 
         material.SetVector ("_Light", light);
         material.SetVector ("_LightColor", lightColor);
-        material.SetVector ("_LightParams1", new Vector4 (lightAbsorption, baseAttenuation, 0, 0));
-        material.SetVector ("_LightParams2", new Vector4 (inScatter, outScatter, blendScatter, 0));
+        material.SetVector ("_LightParams1", new Vector4 (lightAbsorption, attenuationClamp, extraBrightIntensity, extraBrightExponent));
+        material.SetVector ("_LightParams2", new Vector4 (inScatter, outScatter, blendScatter, minimumAttenuation));
 
         material.SetInt ("_CloudStepNumber", cloudStepNumber);
         material.SetInt ("_LightStepNumber", lightStepNumber);
