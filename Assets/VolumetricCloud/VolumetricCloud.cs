@@ -7,7 +7,8 @@ public class VolumetricCloud : MonoBehaviour {
 
     [Header ("Resources")]
     public Shader shader;
-    public Texture2D blueNoise;
+    public List<Texture2D> blueNoises;
+    int blueNoiseIndex;
     Material material;
     static Mesh cubeMesh;
 
@@ -35,20 +36,24 @@ public class VolumetricCloud : MonoBehaviour {
 
     [Header ("Lighting")]
     public Light sun;
-    public float lightAbsorption = 1f;
+    public float lightAbsorptionThroughCloud = 1f;
+    public float lightAbsorptionToSun = 1f;
     [Range (0f, 1f)]
     public float attenuationClamp = 0f;
     [Range (0f, 1f)]
     public float minimumAttenuation = 0f;
     public float extraBrightIntensity = 0f;
     public float extraBrightExponent = 0f;
-
     [Range (0f, 1f)]
     public float inScatter = 0f;
     [Range (0f, 1f)]
     public float outScatter = 0f;
     [Range (0f, 1f)]
     public float blendScatter = 0.5f;
+
+    Vector4 lightParams1 { get => new Vector4 (lightAbsorptionThroughCloud, lightAbsorptionToSun, ((byte)Mathf.Exp (-lightAbsorptionToSun * attenuationClamp)), minimumAttenuation); }
+    Vector4 lightParams2 { get => new Vector4 (extraBrightIntensity, extraBrightExponent, 0f, 0f); }
+    Vector4 lightParams3 { get => new Vector4 (inScatter, outScatter, blendScatter, 0f); }
 
     [Header ("Rendering Settings")]
     [Range (4, 64)]
@@ -85,10 +90,19 @@ public class VolumetricCloud : MonoBehaviour {
         volumeSize.x = Mathf.Max (0.01f, volumeSize.x);
         volumeSize.y = Mathf.Max (0.01f, volumeSize.y);
         volumeSize.z = Mathf.Max (0.01f, volumeSize.z);
-        lightAbsorption = Mathf.Max (0, lightAbsorption);
+        lightAbsorptionThroughCloud = Mathf.Max (0, lightAbsorptionThroughCloud);
+        lightAbsorptionToSun = Mathf.Max (0, lightAbsorptionToSun);
         cloudStepNumber = Mathf.Clamp (cloudStepNumber, 4, 64);
         lightStepNumber = Mathf.Clamp (lightStepNumber, 4, 16);
         return true;
+    }
+
+    Texture2D GetBlueNoiseAndForward () {
+        if (blueNoises != null && blueNoises.Count > 0) {
+            blueNoiseIndex = (blueNoiseIndex + 1) % blueNoises.Count;
+            return blueNoises[blueNoiseIndex];
+        }
+        return null;
     }
 
     void UpdateMaterial () {
@@ -105,7 +119,7 @@ public class VolumetricCloud : MonoBehaviour {
             lightColor *= sun.intensity;
         }
 
-        material.SetTexture ("_BlueNoise", blueNoise);
+        material.SetTexture ("_BlueNoise", GetBlueNoiseAndForward ());
         material.SetTexture ("_NoiseTex", noiseTexture);
         material.SetVector ("_NoiseScale1", new Vector4 (noiseLayer1.scale.x, noiseLayer1.scale.y, noiseLayer1.scale.z, noiseLayer1.weight));
         material.SetVector ("_NoiseScale2", new Vector4 (noiseLayer2.scale.x, noiseLayer2.scale.y, noiseLayer2.scale.z, noiseLayer2.weight));
@@ -122,8 +136,9 @@ public class VolumetricCloud : MonoBehaviour {
 
         material.SetVector ("_Light", light);
         material.SetVector ("_LightColor", lightColor);
-        material.SetVector ("_LightParams1", new Vector4 (lightAbsorption, attenuationClamp, extraBrightIntensity, extraBrightExponent));
-        material.SetVector ("_LightParams2", new Vector4 (inScatter, outScatter, blendScatter, minimumAttenuation));
+        material.SetVector ("_LightParams1", lightParams1);
+        material.SetVector ("_LightParams2", lightParams2);
+        material.SetVector ("_LightParams3", lightParams3);
 
         material.SetInt ("_CloudStepNumber", cloudStepNumber);
         material.SetInt ("_LightStepNumber", lightStepNumber);

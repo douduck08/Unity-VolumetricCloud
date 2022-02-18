@@ -35,20 +35,24 @@ float4 _Light;
 float4 _LightColor;
 float4 _LightParams1;
 float4 _LightParams2;
+float4 _LightParams3;
 
 uint _CloudStepNumber;
 uint _LightStepNumber;
 float _MaxDistance;
 float _RandomStrength;
 
-#define _LightAbsorption _LightParams1.x
-#define _AttenuationClamp _LightParams1.y
-#define _ExtraBrightIntensity _LightParams1.z
-#define _ExtraBrightExponent _LightParams1.w
-#define _MinimumAttenuation _LightParams2.w
-#define _InScatter _LightParams2.x
-#define _OutScatter _LightParams2.y
-#define _BlendScatter _LightParams2.z
+#define _LightAbsorptionThroughCloud _LightParams1.x
+#define _LightAbsorptionToSun _LightParams1.y
+#define _ClampedAttenuation _LightParams1.z
+#define _MinimumAttenuation _LightParams1.w
+
+#define _ExtraBrightIntensity _LightParams2.x
+#define _ExtraBrightExponent _LightParams2.y
+
+#define _InScatter _LightParams3.x
+#define _OutScatter _LightParams3.y
+#define _BlendScatter _LightParams3.z
 
 // ******** //
 //  vertex  //
@@ -90,7 +94,7 @@ float GetLightTransmittance(float3 rayOrigin, float3 rayDir) {
     float2 boxHits = BoxIntersection(rayOrigin, rayDir) * length(rayDir);
     float nearDist = max(0, boxHits.x);
     float farDist = boxHits.y;
-    if (farDist  < nearDist) {
+    if (farDist < nearDist) {
         return 1.0;
     }
 
@@ -102,9 +106,8 @@ float GetLightTransmittance(float3 rayOrigin, float3 rayDir) {
         float3 samplePos = rayOrigin + rayDir * (nearDist + stepSize * i);
         totalDensity += SampleDensity(samplePos) * stepSize;
     }
-    float transmittance = exp(-totalDensity * _LightAbsorption);
-    float transmittanceClamp = exp(-_AttenuationClamp * _LightAbsorption);
-    return max(max(transmittance, transmittanceClamp), totalDensity * _MinimumAttenuation);
+    float transmittance = exp(-totalDensity * _LightAbsorptionToSun);
+    return max(max(transmittance, _ClampedAttenuation), totalDensity * _MinimumAttenuation);
 }
 
 float HG(float vdotl, float g) {
@@ -152,7 +155,7 @@ float4 frag (v2f i) : SV_Target {
         float lightTransmittance = GetLightTransmittance(samplePos, _Light);
 
         lightEnergy += density * transmittance * lightTransmittance * lightScatter;
-        transmittance *= exp(-density * _LightAbsorption);
+        transmittance *= exp(-density * _LightAbsorptionThroughCloud);
 
         if (transmittance < 0.001) {
             break;
@@ -160,7 +163,7 @@ float4 frag (v2f i) : SV_Target {
         samplePos += rayDir * stepSize;
     }
 
-    float alpha = 1 - transmittance;
+    float alpha = transmittance;
     float3 color = _CloudColor * _LightColor * lightEnergy;
     return float4(color, alpha);
 }

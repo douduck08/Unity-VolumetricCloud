@@ -6,7 +6,7 @@
         Cull Front
         ZWrite Off
         ZTest Off
-        Blend SrcAlpha OneMinusSrcAlpha
+        Blend One SrcAlpha
 
         Pass {
             CGPROGRAM

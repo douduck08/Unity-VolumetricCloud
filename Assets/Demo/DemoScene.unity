@@ -151,7 +151,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   shader: {fileID: 4800000, guid: afe2f37570cbe5b479404b52f45c238c, type: 3}
-  blueNoise: {fileID: 2800000, guid: 2754655e34397cd4eb85be4536867b7a, type: 3}
+  blueNoises:
+  - {fileID: 2800000, guid: 5338617ebc4c05349ba8073ca18bce8b, type: 3}
+  - {fileID: 2800000, guid: 326aa413df2cc3a44874361558070abf, type: 3}
+  - {fileID: 2800000, guid: 3fe0c21e2dbca274d92bb05ce586f632, type: 3}
+  - {fileID: 2800000, guid: da1a232c4e2059243abd30e8b6b328c1, type: 3}
+  - {fileID: 2800000, guid: 50b08e1b71d92a74781291f2b1a43106, type: 3}
+  - {fileID: 2800000, guid: 2c9bf59dbc561b74c9039b1895f6c799, type: 3}
+  - {fileID: 2800000, guid: 9353048236aa68c48a8026d82f03c75a, type: 3}
+  - {fileID: 2800000, guid: 98cfc9dc7cea42a4795db1df5063c2d7, type: 3}
   noiseAsset: {fileID: 11400000, guid: 2ae15ca6453b10242b5f4b41d6167a0f, type: 2}
   noiseLayer1:
     scale: {x: 100, y: 50, z: 100}
@@ -169,15 +177,16 @@ MonoBehaviour:
     scrollingSpeed: 9
     weight: 0.125
   volumeSize: {x: 200, y: 20, z: 200}
-  densityOffset: 0.6
-  densityMultiplier: 2
+  densityOffset: 0.65
+  densityMultiplier: 18
   speedMultiplier: 3
   cloudColor: {r: 1, g: 1, b: 1, a: 1}
   sun: {fileID: 705507994}
-  lightAbsorption: 0.25
+  lightAbsorptionThroughCloud: 0.6
+  lightAbsorptionToSun: 0.2
   attenuationClamp: 0.2
   minimumAttenuation: 0.2
-  extraBrightIntensity: 1
+  extraBrightIntensity: 0.6
   extraBrightExponent: 3
   inScatter: 0.2
   outScatter: 0.1
